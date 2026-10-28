@@ -1,132 +1,71 @@
 import React from 'react';
-import { TechPackProvider, useTechPack } from './context/TechPackContext';
 import { TopNav } from './components/TopNav';
-import { PipelineStepper, PIPELINE_SCREENS } from './components/PipelineStepper';
+import { AboutPanel } from './harvest/AboutPanel';
+import { AnalyticsPanel } from './harvest/AnalyticsPanel';
+import { SettingsPanel } from './harvest/SettingsPanel';
+import { HarvestWorkspace } from './harvest/HarvestWorkspace';
 
-import { Screen1ProductExplorer } from './components/screens/Screen1ProductExplorer';
-import { Screen2MasterStyleWorkspace } from './components/screens/Screen2MasterStyleWorkspace';
-import { Screen3PluginMetadataViewer } from './components/screens/Screen3PluginMetadataViewer';
-import { Screen4TechnicalSketchAnalyzer } from './components/screens/Screen4TechnicalSketchAnalyzer';
-import { Screen5DevObjectFanOut } from './components/screens/Screen5DevObjectFanOut';
-import { Screen6BomGenerator } from './components/screens/Screen6BomGenerator';
-import { Screen7MaterialValidation } from './components/screens/Screen7MaterialValidation';
-import { Screen8HistoricalRAG } from './components/screens/Screen8HistoricalRAG';
-import { Screen9CorrectionWorkflow } from './components/screens/Screen9CorrectionWorkflow';
-import { Screen10LearningDashboard } from './components/screens/Screen10LearningDashboard';
-import { TechPackPrintModal } from './components/TechPackPrintModal';
-import { MstsUploadModal } from './components/MstsUploadModal';
+/** One bad data file must not blank the whole page: show a message and let the user carry on. */
+class Guard extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <div role="alert" className="text-sm px-3 py-3 rounded-md border text-rose-800 bg-rose-50 border-rose-200">
+        Something in the loaded data could not be shown.{' '}
+        <button className="underline cursor-pointer" onClick={() => this.setState({ failed: false })}>Try again</button>
+        {' '}or pick another master style.
+      </div>
+    );
+  }
+}
 
-import { ChevronLeft, ChevronRight, Printer } from 'lucide-react';
+type View = 'home' | 'about' | 'analytics' | 'settings';
+const VIEWS: View[] = ['home', 'about', 'analytics', 'settings'];
+const viewFromUrl = (): View => {
+  const name = window.location.hash.replace(/^#\/?/, '');
+  return (VIEWS as string[]).includes(name) ? (name as View) : 'home';
+};
 
-const ScreenRenderer: React.FC = () => {
-  const {
-    currentScreen,
-    prevScreen,
-    nextScreen,
-    activeUploadModalOpen,
-    setActiveUploadModalOpen
-  } = useTechPack();
-  const [printOpen, setPrintOpen] = React.useState(false);
+export default function App() {
+  // Bumped after Purge History so the workspace drops anything it was showing and reloads its run list.
+  const [purge, setPurge] = React.useState<{ version: number; runs: number; styles: number }>({ version: 0, runs: 0, styles: 0 });
 
-  const currentScreenMeta = PIPELINE_SCREENS.find((s) => s.id === currentScreen);
-
-  const renderActiveScreen = () => {
-    switch (currentScreen) {
-      case 1:
-        return <Screen1ProductExplorer />;
-      case 2:
-        return <Screen2MasterStyleWorkspace />;
-      case 3:
-        return <Screen3PluginMetadataViewer />;
-      case 4:
-        return <Screen4TechnicalSketchAnalyzer />;
-      case 5:
-        return <Screen5DevObjectFanOut />;
-      case 6:
-        return <Screen6BomGenerator />;
-      case 7:
-        return <Screen7MaterialValidation />;
-      case 8:
-        return <Screen8HistoricalRAG />;
-      case 9:
-        return <Screen9CorrectionWorkflow />;
-      case 10:
-        return <Screen10LearningDashboard />;
-      default:
-        return <Screen1ProductExplorer />;
-    }
+  // Home (the main flow), About, Analytics and Settings are separate pages, one at a time. The address bar follows (#/about ...), so the
+  // browser's Back button and a bookmark work, and the app name or logo always leads Home.
+  const [view, setView] = React.useState<View>(viewFromUrl);
+  React.useEffect(() => {
+    const sync = () => setView(viewFromUrl());
+    window.addEventListener('popstate', sync);
+    window.addEventListener('hashchange', sync);
+    return () => {
+      window.removeEventListener('popstate', sync);
+      window.removeEventListener('hashchange', sync);
+    };
+  }, []);
+  const go = (next: View) => {
+    if (next !== view) window.history.pushState(null, '', next === 'home' ? `${window.location.pathname}${window.location.search}` : `#/${next}`);
+    setView(next);
+    window.scrollTo({ top: 0 });
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-100/60 text-slate-900 font-sans antialiased">
-      <TopNav />
-      <PipelineStepper />
-
+      <TopNav view={view} onNavigate={go} onPurged={(s) => setPurge((p) => ({ version: p.version + 1, ...s }))} />
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {renderActiveScreen()}
-      </main>
-
-      {/* Persistent Bottom Bar - Focused & Clean */}
-      <footer className="bg-white border-t border-slate-200 px-6 py-3 sticky bottom-0 z-30 shadow-xs">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-slate-500">
-            <span className="font-bold text-slate-800">
-              Step {currentScreen} of 10:
-            </span>
-            <span className="text-slate-600 font-medium">
-              {currentScreenMeta?.title} ({currentScreenMeta?.subtitle})
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPrintOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              <Printer className="w-3.5 h-3.5 text-slate-500" />
-              <span>Print / Export Tech Pack</span>
-            </button>
-
-            <div className="h-4 w-px bg-slate-200 mx-1 hidden sm:block" />
-
-            <button
-              onClick={prevScreen}
-              disabled={currentScreen === 1}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-              <span>Prev</span>
-            </button>
-
-            <button
-              onClick={nextScreen}
-              disabled={currentScreen === 10}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer font-medium shadow-xs"
-            >
-              <span>Next</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+        {view === 'about' && <AboutPanel onClose={() => go('home')} />}
+        {view === 'analytics' && <AnalyticsPanel onClose={() => go('home')} />}
+        {view === 'settings' && <SettingsPanel onClose={() => go('home')} />}
+        {/* Home stays mounted while another page is open, so the chosen style, the step and the sign-in are still there on return */}
+        <div hidden={view !== 'home'}>
+          <Guard>
+            <HarvestWorkspace purgeVersion={purge.version} purgedRuns={purge.runs} purgedStyles={purge.styles} />
+          </Guard>
         </div>
-      </footer>
-
-      <TechPackPrintModal
-        isOpen={printOpen}
-        onClose={() => setPrintOpen(false)}
-      />
-
-      <MstsUploadModal
-        isOpen={activeUploadModalOpen}
-        onClose={() => setActiveUploadModalOpen(false)}
-      />
+      </main>
     </div>
-  );
-};
-
-export default function App() {
-  return (
-    <TechPackProvider>
-      <ScreenRenderer />
-    </TechPackProvider>
   );
 }

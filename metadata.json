@@ -1,6 +1,0 @@
-{
-  "name": "OmniThink Tech Pack Engine Simulator",
-  "description": "Interactive SP28 OmniThink Tech Pack Simulator modeling Master Styles, Development Objects, PDAM plugin metadata, Vision AI sketch analysis, FlexPLM BOM payloads, RAG historical intelligence, and learning loop.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
