@@ -33,7 +33,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   },
   data: { defaultSource: 'latest', catalogCacheMinutes: 10 },
   reading: { reuseSaved: true },
-  display: { aboutTab: 0, analyticsTab: 0 }
+  display: { aboutTab: 0, analyticsTab: 0, appName: 'MasterStyleToBOM', tagline: 'From Master Style to a refined BOM', badge: 'MB', logoVersion: 0 }
 };
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
@@ -55,6 +55,13 @@ const int = (name: string, min: number, max: number): Check => (v) => {
 const num = (name: string, min: number, max: number): Check => (v) => {
   if (typeof v !== 'number' || !Number.isFinite(v) || v < min || v > max) throw new Invalid(`${name} must be a number from ${min} to ${max}.`);
   return v;
+};
+/** A short piece of display text: trimmed, no control characters, within the length. */
+const text = (name: string, min: number, max: number): Check => (v) => {
+  const t = typeof v === 'string' ? v.trim() : null;
+  // eslint-disable-next-line no-control-regex
+  if (t === null || t.length < min || t.length > max || /[\u0000-\u001f\u007f]/.test(t)) throw new Invalid(`${name} must be ${min === max ? `${min}` : `${min} to ${max}`} character${max === 1 ? '' : 's'}, with no line breaks.`);
+  return t;
 };
 const modelId: Check = (v) => {
   if (typeof v !== 'string' || !/^[\w.\-/:~]{0,120}$/.test(v.trim())) throw new Invalid('The local model id does not look right (letters, digits and . - _ / : ~ only, up to 120 characters).');
@@ -111,7 +118,14 @@ const RULES: { [S in keyof AppSettings]: Record<string, Check> } = {
   },
   data: { defaultSource: source, catalogCacheMinutes: int('The catalog memory time', 0, 120) },
   reading: { reuseSaved: bool('Reuse saved readings') },
-  display: { aboutTab: int('The About tab', 0, 20), analyticsTab: int('The Analytics tab', 0, 20) }
+  display: {
+    aboutTab: int('The About tab', 0, 20),
+    analyticsTab: int('The Analytics tab', 0, 20),
+    appName: text('The app name', 1, 40),
+    tagline: text('The tag line', 0, 80),
+    badge: text('The badge', 1, 3),
+    logoVersion: int('The logo version', 0, Number.MAX_SAFE_INTEGER)
+  }
 };
 
 /** `base` with every known key of `patch` checked and applied; unknown keys are ignored. With `lenient`, a bad value keeps the base value. */
@@ -163,6 +177,11 @@ function load(): AppSettings {
 export function getSettings(): AppSettings {
   cache ??= load();
   return clone(cache);
+}
+
+/** Only the logo routes call this: a page cannot set the logo version through PUT /settings. */
+export function setLogoVersion(version: number): void {
+  updateSettings({ display: { logoVersion: version } });
 }
 
 /** Check `patch` (a partial AppSettings), merge it into the current settings and save. Throws an Error with a plain message when a value is not acceptable; nothing is saved then. */

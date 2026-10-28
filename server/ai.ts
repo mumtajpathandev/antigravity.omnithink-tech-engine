@@ -331,7 +331,7 @@ async function askCompatible(c: Choice, task: Task, content: string): Promise<un
   const local = c.provider === 'local';
   const res = await fetch(local ? `${LOCAL_BASE}/v1/chat/completions` : meta(c.provider).compat!, {
     method: 'POST',
-    headers: { ...(local ? {} : { Authorization: `Bearer ${c.key}` }), 'content-type': 'application/json', ...(c.provider === 'openrouter' ? { 'X-Title': 'SketchToBOM' } : {}) },
+    headers: { ...(local ? {} : { Authorization: `Bearer ${c.key}` }), 'content-type': 'application/json', ...(c.provider === 'openrouter' ? { 'X-Title': getSettings().display.appName } : {}) },
     body: JSON.stringify({
       model: c.model,
       [c.provider === 'openai' ? 'max_completion_tokens' : 'max_tokens']: task.maxTokens ?? 2000,

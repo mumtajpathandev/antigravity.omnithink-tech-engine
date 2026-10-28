@@ -21,7 +21,7 @@ const COLUMNS: { key: keyof DraftFields; label: string }[] = [
   { key: 'materialName', label: 'Material' }
 ];
 
-const NO_ENRICHMENT: Enrichment = { lookup: false, history: false, ai: [] };
+const NO_ENRICHMENT: Enrichment = { lookup: false, history: true, ai: [] };
 const enrichKey = (styleRef: string, devObjectId: string) => `${styleRef}|${devObjectId}`;
 
 

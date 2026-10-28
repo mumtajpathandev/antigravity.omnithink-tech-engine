@@ -1,4 +1,4 @@
-# SketchToBOM
+# MasterStyleToBOM
 
 (Reads PDAM sketches and plugin data and builds the BOM; compared against OmniThink / OmniTechPack.)
 

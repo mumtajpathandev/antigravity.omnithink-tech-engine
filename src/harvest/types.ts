@@ -441,6 +441,14 @@ export interface AppSettings {
     /** the tab About / Analytics open on (index) */
     aboutTab: number;
     analyticsTab: number;
+    /** the app's name, shown top left, in the browser tab and in the About text (1..40 characters) */
+    appName: string; // default 'MasterStyleToBOM'
+    /** the line under the name (0..80 characters) */
+    tagline: string; // default 'From Master Style to a refined BOM'
+    /** the letters in the small badge next to the name (1..3 characters) */
+    badge: string; // default 'MB'
+    /** set by the server when a logo is uploaded (0 = none; GET /api/logo?v=<this> serves it). Changing it in a PUT has no effect. */
+    logoVersion: number;
   };
 }
 

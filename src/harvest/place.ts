@@ -10,7 +10,7 @@ export interface Place {
   devObject: string | null;
 }
 
-const KEY = 'sketchtobom.place';
+const KEY = 'masterstyletobom.place';
 
 export function readPlace(): Place | null {
   try {

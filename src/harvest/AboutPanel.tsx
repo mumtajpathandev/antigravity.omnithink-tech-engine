@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { loadSettingsOnce } from './api';
+import { useBranding } from './branding';
 
 // The project's own description, shown on the main page: why it exists, how it is built and what it runs on. The numbers the app
 // measures itself (AI timings, saved work, the PDF corpus) live in the Analytics section.
@@ -136,16 +137,15 @@ const Architecture: React.FC = () => {
   );
 };
 
-const SECTIONS: { id: string; tab: string; node: React.ReactNode }[] = [
-  {
-    id: 'about-0',
-    tab: 'Objective',
-    node: (
+/** The Objective tab: it names the app from Settings > Display, so it is a component. */
+const ObjectiveTab: React.FC = () => {
+  const { appName } = useBranding();
+  return (
       <div className="space-y-6">
         <section className="space-y-3">
-          <h3 className={h3}>What SketchToBOM is for</h3>
+          <h3 className={h3}>What {appName} is for</h3>
           <p className={p}>
-            SketchToBOM turns a master style's structured data from PDAM, together with its technical sketch PDF, into a reviewed Bill of Materials (BOM) and a
+            {appName} turns a master style's structured data from PDAM, together with its technical sketch PDF, into a reviewed Bill of Materials (BOM) and a
             Flex-ready payload. Every correction a person makes is remembered, so the next BOM starts from a better place.
           </p>
         </section>
@@ -154,7 +154,7 @@ const SECTIONS: { id: string; tab: string; node: React.ReactNode }[] = [
           <h3 className={h3}>Why it exists</h3>
           <p className={p}>
             Today's tool, OmniThink (OmniTechPack on the stage console), reads each sketch PDF with AI. It gets about 80–85% of BOMs right, and the other 15% or so
-            need manual fixes, many of them the same fix again and again. SketchToBOM is a proof of concept for a more dependable route to the same result.
+            need manual fixes, many of them the same fix again and again. {appName} is a proof of concept for a more dependable route to the same result.
           </p>
         </section>
 
@@ -184,6 +184,15 @@ const SECTIONS: { id: string; tab: string; node: React.ReactNode }[] = [
           </p>
         </section>
       </div>
+  );
+};
+
+const SECTIONS: { id: string; tab: string; node: React.ReactNode }[] = [
+  {
+    id: 'about-0',
+    tab: 'Objective',
+    node: (
+      <ObjectiveTab />
     )
   },
   {

@@ -3,6 +3,7 @@ import { TopNav } from './components/TopNav';
 import { AboutPanel } from './harvest/AboutPanel';
 import { AnalyticsPanel } from './harvest/AnalyticsPanel';
 import { SettingsPanel } from './harvest/SettingsPanel';
+import { useBranding } from './harvest/branding';
 import { HarvestWorkspace } from './harvest/HarvestWorkspace';
 
 /** One bad data file must not blank the whole page: show a message and let the user carry on. */
@@ -31,6 +32,17 @@ const viewFromUrl = (): View => {
 };
 
 export default function App() {
+  const { appName, logoUrl } = useBranding();
+  React.useEffect(() => {
+    document.title = appName;
+  }, [appName]);
+  const defaultIcon = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (!link) return;
+    defaultIcon.current ??= link.href;
+    link.href = logoUrl ?? defaultIcon.current;
+  }, [logoUrl]);
   // Bumped after Purge History so the workspace drops anything it was showing and reloads its run list.
   const [purge, setPurge] = React.useState<{ version: number; runs: number; styles: number }>({ version: 0, runs: 0, styles: 0 });
 

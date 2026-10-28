@@ -92,6 +92,9 @@ export const harvestApi = {
   /** Only the fields that changed; the server checks the ranges and answers 400 with a message when one is wrong. */
   saveSettings: (patch: { [K in keyof AppSettings]?: Partial<AppSettings[K]> }) =>
     call<SettingsView>('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) }),
+  /** Settings > Display: upload the logo (PNG, JPEG, WebP, GIF or a plain SVG, up to 512 KB). */
+  uploadLogo: async (file: File) => post<{ ok: true; version: number }>('/api/logo', { dataBase64: await fileToBase64(file) }),
+  removeLogo: () => call<{ ok: true }>('/api/logo', { method: 'DELETE' }),
   clearPdfReadings: () => post<{ removed: number }>('/api/settings/clear-pdf-readings', {}),
   ai: (env: Env, ref: string, devObjectId: string) => post<AiResult>('/api/style/ai', { env, ref, devObjectId }),
   loadInput: (techInput: TechEngineInput, sketchBase64?: string) =>

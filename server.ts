@@ -2,6 +2,7 @@
 // PDAM. It listens on localhost only, because it holds login credentials in memory.
 
 import express from 'express';
+import { getSettings } from './server/settings';
 import path from 'node:path';
 import { APP_ROOT } from './server/config';
 import { router } from './server/routes';
@@ -63,7 +64,7 @@ async function main() {
   }
 
   app.listen(PORT, HOST, () => {
-    console.log(`SketchToBOM server: http://${HOST}:${PORT}`);
+    console.log(`${getSettings().display.appName} server: http://${HOST}:${PORT}`);
     setTimeout(warmCache, 50); // after the port is open, so startup is not delayed
   });
 }

@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { harvestApi } from '../harvest/api';
+import { useBranding } from '../harvest/branding';
 
 export const TopNav: React.FC<{
   onPurged?: (summary: { runs: number; styles: number }) => void;
   view?: 'home' | 'about' | 'analytics' | 'settings';
   onNavigate?: (v: 'home' | 'about' | 'analytics' | 'settings') => void;
 }> = ({ onPurged, view = 'home', onNavigate }) => {
+  const { appName, tagline, badge, logoUrl } = useBranding();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [purging, setPurging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,13 +53,24 @@ export const TopNav: React.FC<{
           e.preventDefault();
           onNavigate?.('home');
         }}
-        aria-label="SketchToBOM, from Master Style to a refined BOM. Go to Home"
+        aria-label={`${appName}${tagline ? `, ${tagline}` : ''}. Go to Home`}
         className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
       >
-        <div className="w-8 h-8 rounded bg-slate-900 text-white text-sm font-bold flex items-center justify-center shrink-0" aria-hidden>SB</div>
+        {logoUrl ? (
+          <img src={logoUrl} alt="" className="w-9 h-9 rounded-lg object-contain bg-white border border-slate-200 shrink-0" />
+        ) : (
+        <div className="w-9 h-9 rounded-lg bg-slate-900 text-white flex flex-col items-center justify-center shrink-0 leading-none" aria-hidden>
+          <span className="text-[14px] font-bold tracking-tight">{badge}</span>
+          <span className="mt-[3px] flex flex-col items-center gap-[1.5px]">
+            <i className="block h-[1.5px] w-4 rounded-full bg-sky-400" />
+            <i className="block h-[1.5px] w-3 rounded-full bg-sky-400" />
+            <i className="block h-[1.5px] w-3.5 rounded-full bg-sky-400" />
+          </span>
+        </div>
+        )}
         <span className="flex flex-col leading-tight">
-          <span className="font-bold text-base">SketchToBOM</span>
-          <span className="text-xs font-normal text-slate-600 tracking-normal">From Master Style to a refined BOM</span>
+          <span className="font-bold text-base">{appName}</span>
+          {tagline && <span className="text-xs font-normal text-slate-600 tracking-normal">{tagline}</span>}
         </span>
       </a>
 

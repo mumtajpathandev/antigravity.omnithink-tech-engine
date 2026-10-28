@@ -437,10 +437,30 @@ export const SettingsPanel: React.FC<{ onClose: () => void; onChanged?: () => vo
   const [clearing, setClearing] = useState(false);
   const [clearResult, setClearResult] = useState<string | null>(null);
   const dirtyDraft = useRef(false);
+  const [logoBusy, setLogoBusy] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
 
   const announce = () => {
     window.dispatchEvent(new Event(SETTINGS_CHANGED));
     onChanged?.();
+  };
+
+  /** Upload or remove the logo, then reload the settings so the new version shows here and in the top bar. */
+  const changeLogo = async (action: () => Promise<unknown>) => {
+    setLogoBusy(true);
+    setLogoError(null);
+    try {
+      await action();
+      forgetSettingsCache();
+      const v = await harvestApi.settings();
+      setView(v);
+      setDraft((cur) => (cur ? { ...cur, display: { ...cur.display, logoVersion: v.settings.display.logoVersion } } : structuredClone(v.settings)));
+      announce();
+    } catch (e) {
+      setLogoError((e as Error).message);
+    } finally {
+      setLogoBusy(false);
+    }
   };
 
   const load = useCallback(async () => {
@@ -494,7 +514,8 @@ export const SettingsPanel: React.FC<{ onClose: () => void; onChanged?: () => vo
   const invalidTab = (t: number) =>
     !!draft && (
       (t === 1 && LIMITS.some((l) => { const v = draft.ai[l.key]; return !Number.isInteger(v) || v < l.min || v > l.max; })) ||
-      (t === 2 && (!Number.isInteger(draft.data.catalogCacheMinutes) || draft.data.catalogCacheMinutes < 0 || draft.data.catalogCacheMinutes > 120))
+      (t === 2 && (!Number.isInteger(draft.data.catalogCacheMinutes) || draft.data.catalogCacheMinutes < 0 || draft.data.catalogCacheMinutes > 120)) ||
+    (t === 3 && draft.display.appName !== undefined && ((draft.display.appName ?? '').trim() === '' || (draft.display.badge ?? '').trim() === ''))
     );
   const invalid = invalidTab(tab);
 
@@ -708,6 +729,59 @@ export const SettingsPanel: React.FC<{ onClose: () => void; onChanged?: () => vo
 
           {view && draft && tab === 3 && (
             <div className="space-y-4">
+              <div className="space-y-3 pb-4 border-b border-slate-100">
+                <h3 className="text-sm font-bold text-slate-900">Name and look</h3>
+                <p className={hint}>What the top bar, the browser tab and the About page call this app. Changes show at once.</p>
+                {([
+                  ['appName', 'App name', 40, 'Shown top left and in the browser tab.'],
+                  ['tagline', 'Tag line', 80, 'The line under the name. Leave empty for none.'],
+                  ['badge', 'Badge letters', 3, 'The small square next to the name.']
+                ] as const).map(([key, label, max, help]) => (
+                  <div key={key} className="space-y-1">
+                    <label htmlFor={`set-${key}`} className="block text-sm text-slate-800">{label}</label>
+                    <input
+                      id={`set-${key}`}
+                      type="text"
+                      maxLength={max}
+                      value={draft.display[key] ?? ''}
+                      onChange={(e) => edit((d) => { d.display[key] = e.target.value; })}
+                      aria-invalid={key !== 'tagline' && (draft.display[key] ?? '').trim() === ''}
+                      className={`${input} w-full max-w-md ${key === 'badge' ? 'max-w-[8rem] uppercase' : ''}`}
+                    />
+                    <span className={hint}>{help}{key !== 'tagline' && (draft.display[key] ?? '').trim() === '' ? ' Cannot be empty.' : ''}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2 pb-4 border-b border-slate-100">
+                <h3 className="text-sm font-bold text-slate-900">Logo</h3>
+                <p className={hint}>Upload your own logo (PNG, JPEG, WebP, GIF or a plain SVG, up to 512 KB). It replaces the badge letters in the top bar and becomes the browser tab icon.</p>
+                <div className="flex flex-wrap items-center gap-3">
+                  {draft.display.logoVersion > 0 ? (
+                    <img src={`/api/logo?v=${draft.display.logoVersion}`} alt="Your logo" className="w-12 h-12 rounded-lg object-contain bg-white border border-slate-200" />
+                  ) : (
+                    <span className="w-12 h-12 rounded-lg bg-slate-900 text-white text-sm font-bold flex items-center justify-center" aria-hidden>{(draft.display.badge || 'MB').toUpperCase()}</span>
+                  )}
+                  <label className={`${btnPlain} inline-flex items-center`}>
+                    {logoBusy ? 'Uploading...' : draft.display.logoVersion > 0 ? 'Replace logo' : 'Upload logo'}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                      className="sr-only"
+                      disabled={logoBusy}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (file) void changeLogo(() => harvestApi.uploadLogo(file));
+                      }}
+                    />
+                  </label>
+                  {draft.display.logoVersion > 0 && (
+                    <button type="button" className={btnPlain} disabled={logoBusy} onClick={() => void changeLogo(() => harvestApi.removeLogo())}>Remove logo</button>
+                  )}
+                  {draft.display.logoVersion === 0 && <span className={hint}>No logo uploaded: the badge letters are shown.</span>}
+                </div>
+                {logoError && <div role="alert" className="text-sm text-rose-700">{logoError}</div>}
+              </div>
               <div className="flex flex-wrap items-center gap-2">
                 <label htmlFor="set-about-tab" className="text-sm text-slate-800">About opens on</label>
                 <select id="set-about-tab" className={input} value={draft.display.aboutTab} onChange={(e) => edit((d) => { d.display.aboutTab = Number(e.target.value); })}>

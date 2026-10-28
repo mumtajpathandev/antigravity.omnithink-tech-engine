@@ -277,15 +277,15 @@ const CatalogPanel: React.FC<{
       <div className={`${card} p-4`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <div className="text-sm font-semibold text-slate-800">1 Apply historical corrections</div>
-            <div className="text-xs text-slate-500">Reuses what people corrected before for the same material and article. Needs no connection to PDAM. Applied to the BOM, the payload and the PDF straight away.</div>
+            <div className="text-sm font-semibold text-slate-800">1 Past corrections</div>
+            <div className="text-xs text-slate-500">Reuses what people corrected before for the same material and article. On by default, so a style you have corrected before opens corrected. Needs no connection to PDAM; applied to the BOM, the payload and the PDF.</div>
           </div>
           <button
             onClick={() => onEnrichment({ ...enrichment, history: !enrichment.history })}
             aria-pressed={enrichment.history}
             className={`px-3 py-1.5 text-sm font-medium rounded-md cursor-pointer ${enrichment.history ? 'text-slate-800 bg-white border border-slate-300 hover:bg-slate-50' : 'text-white bg-slate-900 hover:bg-slate-800'}`}
           >
-            {enrichment.history ? 'Switch off' : 'Apply historical corrections'}
+            {enrichment.history ? 'Switch off' : 'Switch on'}
           </button>
         </div>
         {enrichment.history && (
@@ -517,7 +517,7 @@ export const BomPanel: React.FC<{
           <span>
             <b>Enriched:</b> {sourcesText(current)} applied to the BOM, the payload and the PDF below.
           </span>
-          <button className="underline hover:text-emerald-950 cursor-pointer" onClick={() => onEnrichment(enrichmentKey(styleRef, active.devObjectId), NO_ENRICHMENT)}>Clear</button>
+          <button className="underline hover:text-emerald-950 cursor-pointer" onClick={() => onEnrichment(enrichmentKey(styleRef, active.devObjectId), { lookup: false, history: false, ai: [] })} title="Remove every enrichment, past corrections too, and show the plain BOM">Clear all</button>
         </div>
       )}
       {viewError && <div role="alert" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">{viewError}</div>}

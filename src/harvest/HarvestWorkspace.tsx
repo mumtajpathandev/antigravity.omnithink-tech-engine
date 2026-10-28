@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Loader2, RefreshCw } from 'lucide-react';
 import { fileToBase64, harvestApi, loadSettingsOnce, SESSION_LOST, SETTINGS_CHANGED } from './api';
+import { useBranding } from './branding';
 import { BomPanel, PdfPanel } from './HarvestPanels';
 import { clearPlace, readPlace, savePlace } from './place';
 import { CorrectionsPanel } from './screens/CorrectionsPanel';
@@ -75,6 +76,7 @@ export const HarvestWorkspace: React.FC<{ purgeVersion?: number; purgedRuns?: nu
   purgedRuns = 0,
   purgedStyles = 0
 }) => {
+  const branding = useBranding();
   const [config, setConfig] = useState<AppConfig | null>(null);
   // Where the user was before a reload (this tab only); null on a normal first visit.
   const [boot] = useState(readPlace);
@@ -472,9 +474,12 @@ export const HarvestWorkspace: React.FC<{ purgeVersion?: number; purgedRuns?: nu
     savePlace({ env, source, style: selected.startsWith('live:') ? '' : selected, step, devObject: activeDev });
   }, [env, source, selected, step, activeDev, placeNote]);
 
+  // why Next is off, shown on hover (and read by screen readers)
+  const nextWhy = step === 5 ? 'This is the last step (5 of 5). Corrections are saved from the table above and the final PDF is built from them.' : !detail ? 'Available once the master style data has loaded.' : undefined;
+
   return (
     <div className="space-y-5">
-      <h1 className="sr-only">SketchToBOM: From Master Style to a refined BOM</h1>
+      <h1 className="sr-only">{branding.appName}{branding.tagline ? `: ${branding.tagline}` : ''}</h1>
 
       {placeNote && (
         <div role="status" className="text-sm px-3 py-2 rounded-md border flex items-center gap-2 text-slate-700 bg-white border-slate-200">
@@ -664,18 +669,22 @@ export const HarvestWorkspace: React.FC<{ purgeVersion?: number; purgedRuns?: nu
           )}
 
           <div className="flex justify-between pt-1">
-            <button className={btnGhost} disabled={step === 1} onClick={() => setStep((step - 1) as 1 | 2 | 3 | 4)}>
-              <ArrowLeft className="w-4 h-4" /> Back
-            </button>
-            <button
-              className={btnPrimary}
-              disabled={step === 5 || !detail}
-              title={!detail ? 'Available once the master style data has loaded' : undefined}
-              aria-description={!detail ? 'Available once the master style data has loaded' : undefined}
-              onClick={() => setStep((step + 1) as 2 | 3 | 4 | 5)}
-            >
-              Next <ArrowRight className="w-4 h-4" />
-            </button>
+            {/* the reason sits on a wrapper too, because a disabled button does not always show its own tooltip */}
+            <span title={step === 1 ? 'This is the first step.' : undefined}>
+              <button className={btnGhost} disabled={step === 1} aria-description={step === 1 ? 'This is the first step.' : undefined} onClick={() => setStep((step - 1) as 1 | 2 | 3 | 4)}>
+                <ArrowLeft className="w-4 h-4" /> Back
+              </button>
+            </span>
+            <span title={nextWhy}>
+              <button
+                className={btnPrimary}
+                disabled={step === 5 || !detail}
+                aria-description={nextWhy}
+                onClick={() => setStep((step + 1) as 2 | 3 | 4 | 5)}
+              >
+                Next <ArrowRight className="w-4 h-4" />
+              </button>
+            </span>
           </div>
         </div>
       ) : (

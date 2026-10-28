@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { Router, type Request, type Response } from 'express';
 import { analytics } from './analytics';
+import { readLogo, removeLogo, saveLogo } from './logo';
 import { clearLog, readSince } from './ailog';
 import { callSummary, readCalls } from './aicalls';
 import { activeLocalModel, aiKeySource, aiModel, aiProvider, aiReady, ENV_NAMES, envKeysOf, effectiveModels, hostedModels, localModelOptions, openRouterModels, suggest } from './ai';
@@ -193,8 +194,35 @@ async function settingsView(): Promise<SettingsView> {
 router.get('/settings', wrap(async (_req, res) => res.json(await settingsView())));
 
 /** Change settings: the body is a partial AppSettings; every value is checked (a bad one is a 400 and nothing is saved). */
+/** The uploaded logo (base64 in JSON, like the sketch PDFs). Only a PNG, JPEG, WebP, GIF or a plain SVG up to 512 KB is accepted. */
+router.post('/logo', wrap((req, res) => {
+  const data = typeof req.body?.dataBase64 === 'string' ? req.body.dataBase64 : '';
+  if (!data) throw new BadRequest('No image was sent.');
+  try {
+    res.json({ ok: true, ...saveLogo(Buffer.from(data, 'base64')) });
+  } catch (err) {
+    throw new BadRequest((err as Error).message);
+  }
+}));
+router.delete('/logo', wrap((_req, res) => {
+  removeLogo();
+  res.json({ ok: true });
+}));
+/** Served for an <img> only: no scripts, no sniffing, and the page's own address is the only place it can be used from. */
+router.get('/logo', wrap((_req, res) => {
+  const logo = readLogo();
+  if (!logo) return void res.status(404).json({ error: 'No logo has been uploaded.' });
+  res.setHeader('Content-Type', logo.type);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox");
+  res.setHeader('Cache-Control', 'private, max-age=31536000, immutable'); // the address carries ?v=<version>, so a new upload is a new address
+  res.sendFile(logo.file);
+}));
+
 router.put('/settings', wrap(async (req, res) => {
   try {
+    // the logo version belongs to the logo routes: a page cannot set it
+    if (req.body?.display && typeof req.body.display === 'object') delete req.body.display.logoVersion;
     updateSettings(req.body);
   } catch (err) {
     throw new BadRequest((err as Error).message);
